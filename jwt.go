@@ -71,19 +71,19 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	queryTenantId := req.URL.Query().Get(j.queryTenantIdParam)
 
 	if len(j.queryTokenParam) == 0 {
-		http.Error(res, "Request error", http.StatusBadRequest)
+		http.Error(res, "queryTokenParam Request error", http.StatusBadRequest)
 		return
 	}
 	
 	token, preprocessError  := preprocessJWT(queryToken)
 	if preprocessError != nil {
-		http.Error(res, "Request error", http.StatusBadRequest)
+		http.Error(res, "preprocessJWT queryToken Request error", http.StatusBadRequest)
 		return
 	}
 	
 	verified, verificationError := verifyJWT(token, j.secret)
 	if verificationError != nil {
-		http.Error(res, "Not allowed", http.StatusUnauthorized)
+		http.Error(res, "verifyJWT Not allowed", http.StatusUnauthorized)
 		return
 	}
 
@@ -91,7 +91,7 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		// If true decode payload
 		payloadJson, decodeErr := decodeBase64(token.payload)
 		if decodeErr != nil {
-			http.Error(res, "Request error", http.StatusBadRequest)
+			http.Error(res, "decodeBase64 Request error", http.StatusBadRequest)
 			return
 		}
 		
