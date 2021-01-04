@@ -1,25 +1,25 @@
-package traefik_token_middleware
+package jwt_middleware
 
 import (
 	"context"
 	"fmt"
+        "strconv"
 	"strings"
 	"net/http"
-	"time"
+        "time"
+        "math"
 	"encoding/base64"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/json"
+        "encoding/json"
 )
 
 type Config struct {
 	Secret string `json:"secret,omitempty"`
-	QueryTokenParam string `json:"queryTokenParam,omitempty"`
-	QueryTenantIdParam string `json:"queryTenantIdParam,omitempty"`
-	Roles string `json:"roles,omitempty"`
+	ProxyHeaderName string `json:"proxyHeaderName,omitempty"`
+	AuthHeader string `json:"authHeader,omitempty"`
+	HeaderPrefix string `json:"headerPrefix,omitempty"`
 }
-
-
 
 
 func CreateConfig() *Config {
@@ -27,111 +27,107 @@ func CreateConfig() *Config {
 }
 
 type JWT struct {
-	next		http.Handler
-	name		string
-	secret		string
-	queryTokenParam	string
-	queryTenantIdParam	string
-	roles string
-}
-
-type TokenPayload struct {
-	Roles      string `json:"roles"`
-	TenantList string `json:"tenantList"`
-	Exp        json.Number    `json:"exp"`
+	next	http.Handler
+	name	string
+	secret	string
+	proxyHeaderName	string
+	authHeader	string
+	headerPrefix	string
 }
 
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 
 	if len(config.Secret) == 0 {
-		config.Secret = "secret"
+		config.Secret = "SECRET"
 	}
-	if len(config.QueryTokenParam) == 0 {
-		config.QueryTokenParam = "queryTokenParam"
+	if len(config.ProxyHeaderName) == 0 {
+		config.ProxyHeaderName = "injectedPayload"
 	}
-	if len(config.QueryTenantIdParam) == 0 {
-		config.QueryTenantIdParam = "queryTenantIdParam"
+	if len(config.AuthHeader) == 0 {
+		config.AuthHeader = "Authorization"
 	}
-	if len(config.Roles) == 0 {
-		config.Roles = "roles"
+	if len(config.HeaderPrefix) == 0 {
+		config.HeaderPrefix = "Bearer"
 	}
 
 	return &JWT{
 		next:		next,
 		name:		name,
 		secret:	config.Secret,
-		queryTokenParam: config.QueryTokenParam,
-		queryTenantIdParam: config.QueryTenantIdParam,
-		roles: config.Roles,
+		proxyHeaderName: config.ProxyHeaderName,
+		authHeader: config.AuthHeader,
+		headerPrefix: config.HeaderPrefix,
 	}, nil
 }
 
 func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	queryToken := req.URL.Query().Get(j.queryTokenParam)
-	queryTenantId := req.URL.Query().Get(j.queryTenantIdParam)
+	headerToken := req.Header.Get(j.authHeader)
 
-	if len(j.queryTokenParam) == 0 {
-		http.Error(res, "queryTokenParam Request error", http.StatusBadRequest)
+	if len(headerToken) == 0 {
+		http.Error(res, "Request error", http.StatusBadRequest)
 		return
 	}
 
-	token, preprocessError  := preprocessJWT(queryToken)
+	token, preprocessError  := preprocessJWT(headerToken, j.headerPrefix)
 	if preprocessError != nil {
-		http.Error(res, "preprocessJWT queryToken Request error: token: " + queryToken + " / tenantid: " + queryTenantId , http.StatusBadRequest)
+		http.Error(res, "Request error", http.StatusBadRequest)
 		return
 	}
 
 	verified, verificationError := verifyJWT(token, j.secret)
 	if verificationError != nil {
-		http.Error(res, "verifyJWT Not allowed", http.StatusUnauthorized)
+		http.Error(res, "Not allowed", http.StatusUnauthorized)
 		return
 	}
 
 	if (verified) {
 		// If true decode payload
-		payloadJson, decodeErr := decodeBase64(token.payload)
+		payload, decodeErr := decodeBase64(token.payload)
 		if decodeErr != nil {
-			http.Error(res, "decodeBase64 Request error", http.StatusBadRequest)
+			http.Error(res, "Request error", http.StatusBadRequest)
 			return
 		}
 
+		// TODO Check for outside of ASCII range characters
+		Data := []byte(payload)
 
-		Data := []byte(payloadJson)
+		fmt.Println("str payload : ----------> ", payload)
+		var v map[string]interface{}
+		err := json.Unmarshal(Data, &v)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
 
-		var payload TokenPayload
-		json.Unmarshal(Data, &payload)
+		fmt.Printf("str expiredate : ----------> %f , unixtime : %d \n", v["exp"], time.Now().UnixNano())
+		fmt.Printf("str expiredate : ----------> %d , unixtime : %d \n", int(math.Floor(v["exp"])), time.Now().UnixNano() / 1000000000)
 
-		expiredate, err := payload.Exp.Int64()
+		expiredate := int64(math.Floor(v["exp"]))
 
 		if(isExpire(expiredate) && err == nil){
 
-		xType := fmt.Sprintf("%T", payload.Exp)
-		fmt.Println(xType)
+			xType := fmt.Sprintf("expire Type : %T \n", v["exp"])
+			fmt.Printf(xType)
 
 			http.Error(res, "Token Expired", http.StatusBadRequest)
 			return
 		}
 
-
-		if len(j.roles) > 0 {
-			if !strings.Contains(j.roles, payload.Roles){
-				http.Error(res, "Role Not Permitted", http.StatusBadRequest)
-			return
-			}
-		}
-
-		if len(queryTenantId) > 0 {
-			if !strings.Contains(payload.TenantList, queryTenantId){
-				http.Error(res, "Tenant Not Permitted", http.StatusBadRequest)
-			return
-			}
-		}
-
-		fmt.Println(payload)
+		// Inject header as proxypayload or configured name
+		req.Header.Add(j.proxyHeaderName, payload)
+		fmt.Println(req.Header)
 		j.next.ServeHTTP(res, req)
 	} else {
 		http.Error(res, "Not allowed", http.StatusUnauthorized)
 	}
+}
+
+func isExpire(ctime int64) bool {
+
+	if(ctime < (time.Now().UnixNano() / 1000000000)){
+		return true;
+	}
+	return false;
 }
 
 // Token Deconstructed header token
@@ -140,14 +136,6 @@ type Token struct {
 	payload string
 	verification string
 }
-
-func isExpire(ctime int64) bool {
-	if(ctime < (time.Now().UnixNano() / 1000000000)){
-		return true;
-		}
-		return false;
-}
-
 
 // verifyJWT Verifies jwt token with secret
 func verifyJWT(token Token, secret string) (bool, error) {
@@ -169,11 +157,16 @@ func verifyJWT(token Token, secret string) (bool, error) {
 }
 
 // preprocessJWT Takes the request header string, strips prefix and whitespaces and returns a Token
-func preprocessJWT(queryToken string) (Token, error) {
+func preprocessJWT(reqHeader string, prefix string) (Token, error) {
+	// fmt.Println("==> [processHeader] SplitAfter")
+	// structuredHeader := strings.SplitAfter(reqHeader, "Bearer ")[1]
+	cleanedString := strings.TrimPrefix(reqHeader, prefix)
+	cleanedString = strings.TrimSpace(cleanedString)
+	// fmt.Println("<== [processHeader] SplitAfter", cleanedString)
 
 	var token Token
 
-	tokenSplit := strings.Split(queryToken, ".")
+	tokenSplit := strings.Split(cleanedString, ".")
 
 	if len(tokenSplit) != 3 {
 		return token, fmt.Errorf("Invalid token")
