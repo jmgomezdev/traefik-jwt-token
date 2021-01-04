@@ -7,7 +7,7 @@
 Start with command
 ```yaml
 command:
-  - --experimental.plugins.traefik-token-middleware.modulename=github.com//traefik-jwt-token
+  - --experimental.plugins.traefik-token-middleware.modulename=github.com/tonyfud/traefik-jwt-token
   - --experimental.plugins.traefik-token-middleware.version=v0.2.2
 ```
 
