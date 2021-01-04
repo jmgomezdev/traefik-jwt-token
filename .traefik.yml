@@ -1,6 +1,6 @@
 displayName: Traefik JWT Token 
 type: middleware
-import: github.com/tonyfud/traefik-token-middleware
+import: github.com/tonyfud/traefik-jwt-token
 summary: 'JWT Token'
 
 testData:
