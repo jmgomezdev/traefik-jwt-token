@@ -1,7 +1,7 @@
-displayName: Traefik Token Middleware
+displayName: Traefik JWT Token 
 type: middleware
-import: github.com/muhgumus/traefik-token-middleware
-summary: 'Verify JWT Token from query Param'
+import: github.com/tonyfud/traefik-token-middleware
+summary: 'JWT Token'
 
 testData:
   encodedHeader:
