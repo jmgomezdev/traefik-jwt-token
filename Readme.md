@@ -1,14 +1,14 @@
-#  Traefik Token Middleware
+#  Traefik JWT Token
 
- Traefik JWT Token Middleware for Query parameters 
+ Traefik JWT Token  
 
 ## Configuration
 
 Start with command
 ```yaml
 command:
-  - --experimental.plugins.traefik-token-middleware.modulename=github.com/muhgumus/traefik-token-middleware
-  - --experimental.plugins.traefik-token-middleware.version=v0.1.4
+  - --experimental.plugins.traefik-token-middleware.modulename=github.com//traefik-jwt-token
+  - --experimental.plugins.traefik-token-middleware.version=v0.2.2
 ```
 
 Activate plugin in your config  
@@ -17,10 +17,9 @@ Activate plugin in your config
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: my-jwtauth
+  name: jwt-token
 spec:
   plugin:
-    traefik-token-middleware:
-      queryParam: token
-      secret: secret
+    traefik-jwt-token:
+      secret: 112233
 ```
