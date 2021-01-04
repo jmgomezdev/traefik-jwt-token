@@ -74,13 +74,13 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "queryTokenParam Request error", http.StatusBadRequest)
 		return
 	}
-	
+
 	token, preprocessError  := preprocessJWT(queryToken)
 	if preprocessError != nil {
-		http.Error(res, "preprocessJWT queryToken Request error", http.StatusBadRequest)
+		http.Error(res, "preprocessJWT queryToken Request error: token: " + queryToken + " / tenantid: " + queryTenantId , http.StatusBadRequest)
 		return
 	}
-	
+
 	verified, verificationError := verifyJWT(token, j.secret)
 	if verificationError != nil {
 		http.Error(res, "verifyJWT Not allowed", http.StatusUnauthorized)
@@ -94,9 +94,9 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, "decodeBase64 Request error", http.StatusBadRequest)
 			return
 		}
-		
 
-		Data := []byte(payloadJson) 
+
+		Data := []byte(payloadJson)
 
 		var payload TokenPayload
 		json.Unmarshal(Data, &payload)
@@ -110,8 +110,8 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 			http.Error(res, "Token Expired", http.StatusBadRequest)
 			return
-		} 
-		
+		}
+
 
 		if len(j.roles) > 0 {
 			if !strings.Contains(j.roles, payload.Roles){
@@ -126,7 +126,7 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			return
 			}
 		}
-		
+
 		fmt.Println(payload)
 		j.next.ServeHTTP(res, req)
 	} else {
@@ -155,7 +155,7 @@ func verifyJWT(token Token, secret string) (bool, error) {
 	message := token.header + "." + token.payload
 	mac.Write([]byte(message))
 	expectedMAC := mac.Sum(nil)
-	
+
 	decodedVerification, errDecode := base64.RawURLEncoding.DecodeString(token.verification)
 	if errDecode != nil {
 		return false, errDecode
@@ -194,5 +194,3 @@ func decodeBase64(baseString string) (string, error) {
 	}
 	return string(byte), nil
 }
-
-
