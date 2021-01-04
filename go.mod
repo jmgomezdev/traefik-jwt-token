@@ -1,3 +1,3 @@
-module github.com/muhgumus/traefik-token-middleware
+module github.com//traefik-jwt-token
 
 go 1.14
