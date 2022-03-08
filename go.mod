@@ -1,3 +1,3 @@
-module github.com/tonyfud/traefik-jwt-token
+module github.com/jmgomezdev/traefik-jwt-token
 
 go 1.15

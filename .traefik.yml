@@ -1,7 +1,7 @@
 displayName: Traefik JWT Token
 summary: HPC Traefik JWT Token.
 type: middleware
-import: github.com/tonyfud/traefik-jwt-token
+import: github.com/jmgomezdev/traefik-jwt-token
 compatibility: TODO
 testData:
   encodedHeader:
