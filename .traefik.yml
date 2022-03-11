@@ -1,8 +1,8 @@
 displayName: Traefik JWT Token
-summary: HPC Traefik JWT Token.
+summary: Traefik middleware JWT Token with validation of expiration time.
 type: middleware
 import: github.com/jmgomezdev/traefik-jwt-token
 compatibility: TODO
 testData:
   encodedHeader:
-    - "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImp0aSI6ImY1NzVlNDZlLTU2ZDQtNGU0Zi04MDQ1LTcwMWJmYjViM2RmNCIsImlhdCI6MTYwODE1MDg1MSwiZXhwIjoxNjA4MTU0NDUxfQ.g_XGqgyR-vo1DZzHiw-HwPQJpJYSsYMvI9rdeMRJEg8"
+    - "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJCS3NNeXI0amlNbkNZX2Rub1RpdFYiLCJpYXQiOjE2NDcwMzYwNzgsImV4cCI6MTY0NzAzNzUxOH0.7XFkLntoj0pioWGwEI57dxg5k5PgV76xeFgQPqStcw0"

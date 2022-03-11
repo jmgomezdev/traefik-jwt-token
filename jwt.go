@@ -35,6 +35,19 @@ type JWT struct {
 	headerPrefix	string
 }
 
+type Token struct {
+	header string
+	payload string
+	verification string
+}
+
+type Data struct{
+	Jti *string `json:"jti"`
+	Iat *int64 `json:"iat"`
+	Exp *int64 `json:"exp"`
+}
+
+
 func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 
 	if len(config.Secret) == 0 {
@@ -81,41 +94,38 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if (verified) {
-		// If true decode payload
 		payload, decodeErr := decodeBase64(token.payload)
 		if decodeErr != nil {
 			http.Error(res, "Request error", http.StatusBadRequest)
 			return
 		}
 
-		// TODO Check for outside of ASCII range characters
-		Data := []byte(payload)
-
-		fmt.Println("str payload : ----------> ", payload)
-		var v map[string]interface{}
-		err := json.Unmarshal(Data, &v)
+		var data Data
+		err :=json.Unmarshal([]byte(payload), &data)
 		if err != nil {
-			fmt.Println(err)
-			panic(err)
+			// fmt.Println(err)
+			http.Error(res, "Request error", http.StatusBadRequest)
+			return
 		}
 
-		fmt.Printf("str expiredate : ----------> %f , unixtime : %d \n", v["exp"], time.Now().UnixNano())
-		fmt.Printf("str expiredate : ----------> %d , unixtime : %d \n", int(math.Floor(v["exp"])), time.Now().UnixNano() / 1000000000)
+		if (data.Jti == nil || data.Iat == nil || data.Exp == nil) {
+			// fmt.Println("ERROR null")
+			http.Error(res, "Request error", http.StatusBadRequest)
+			return
+		}
 
-		expiredate := int64(math.Floor(v["exp"]))
+		expiredate := int64(*data.Exp)
+		if(isExpire(expiredate)){
 
-		if(isExpire(expiredate) && err == nil){
-
-			xType := fmt.Sprintf("expire Type : %T \n", v["exp"])
+			xType := fmt.Sprintf("expire Type : %T \n", *data.Exp)
 			fmt.Printf(xType)
 
 			http.Error(res, "Token Expired", http.StatusBadRequest)
 			return
 		}
 
-		// Inject header as proxypayload or configured name
 		req.Header.Add(j.proxyHeaderName, payload)
-		fmt.Println(req.Header)
+		// fmt.Println(req.Header)
 		j.next.ServeHTTP(res, req)
 	} else {
 		http.Error(res, "Not allowed", http.StatusUnauthorized)
@@ -123,21 +133,12 @@ func (j *JWT) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 }
 
 func isExpire(ctime int64) bool {
-
 	if(ctime < (time.Now().UnixNano() / 1000000000)){
 		return true;
 	}
 	return false;
 }
 
-// Token Deconstructed header token
-type Token struct {
-	header string
-	payload string
-	verification string
-}
-
-// verifyJWT Verifies jwt token with secret
 func verifyJWT(token Token, secret string) (bool, error) {
 	mac := hmac.New(sha256.New, []byte(secret))
 	message := token.header + "." + token.payload
@@ -153,16 +154,11 @@ func verifyJWT(token Token, secret string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
-	// TODO Add time check to jwt verification
 }
 
-// preprocessJWT Takes the request header string, strips prefix and whitespaces and returns a Token
 func preprocessJWT(reqHeader string, prefix string) (Token, error) {
-	// fmt.Println("==> [processHeader] SplitAfter")
-	// structuredHeader := strings.SplitAfter(reqHeader, "Bearer ")[1]
 	cleanedString := strings.TrimPrefix(reqHeader, prefix)
 	cleanedString = strings.TrimSpace(cleanedString)
-	// fmt.Println("<== [processHeader] SplitAfter", cleanedString)
 
 	var token Token
 
@@ -179,7 +175,6 @@ func preprocessJWT(reqHeader string, prefix string) (Token, error) {
 	return token, nil
 }
 
-// decodeBase64 Decode base64 to string
 func decodeBase64(baseString string) (string, error) {
 	byte, decodeErr := base64.RawURLEncoding.DecodeString(baseString)
 	if decodeErr != nil {
