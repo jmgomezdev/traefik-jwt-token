@@ -1,4 +1,4 @@
-package traefik_jwt_token
+package traefik-jwt-verify-time
 
 import (
 	"context"

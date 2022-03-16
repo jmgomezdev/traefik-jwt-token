@@ -1,3 +1,3 @@
-module github.com/jmgomezdev/traefik-jwt-token
+module github.com/jmgomezdev/traefik-jwt-verify-time
 
-go 1.15
+go 1.14
