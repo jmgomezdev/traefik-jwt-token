@@ -1,6 +1,6 @@
 # Traefik JWT Token
 
-Traefik JWT Token.
+Traefik JWT Verify Time
 
 ## Configuration
 
@@ -8,8 +8,8 @@ Start with command
 
 ```yaml
 command:
-  - --experimental.plugins.traefik-token-middleware.modulename=github.com/jmgomezdev/traefik-jwt-token
-  - --experimental.plugins.traefik-token-middleware.version=v1.0.0
+  - --experimental.plugins.traefik-token-middleware.modulename=github.com/jmgomezdev/traefik-jwt-verify-time
+  - --experimental.plugins.traefik-token-middleware.version=v1.0.1
 ```
 
 Activate plugin in your config
@@ -17,7 +17,7 @@ Activate plugin in your config
 ```yaml
 spec:
   plugin:
-    traefik-jwt-token:
+    traefik-jwt-verify-time:
       secret: SECRET
 ```
 

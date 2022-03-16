@@ -1,8 +1,7 @@
-displayName: Traefik JWT Token
+displayName: Traefik JWT Verify Time
 summary: Traefik middleware JWT Token with validation of expiration time.
 type: middleware
-import: github.com/jmgomezdev/traefik-jwt-token
-compatibility: TODO
+import: github.com/jmgomezdev/traefik-jwt-verify-time
 testData:
   encodedHeader:
     - "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJCS3NNeXI0amlNbkNZX2Rub1RpdFYiLCJpYXQiOjE2NDcwMzYwNzgsImV4cCI6MTY0NzAzNzUxOH0.7XFkLntoj0pioWGwEI57dxg5k5PgV76xeFgQPqStcw0"

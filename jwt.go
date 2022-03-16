@@ -1,17 +1,17 @@
-package traefik_jwt_token
+package traefik_jwt_verify_time
 
 import (
 	"context"
 	"fmt"
-        "strconv"
+	"strconv"
 	"strings"
 	"net/http"
-        "time"
-        "math"
+	"time"
+	"math"
 	"encoding/base64"
 	"crypto/hmac"
 	"crypto/sha256"
-        "encoding/json"
+	"encoding/json"
 )
 
 type Config struct {
